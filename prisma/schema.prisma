@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: connection URLs are configured in prisma.config.ts.
+}
+
+enum UserRole {
+  BUSINESS
+  COURIER
+}
+
+enum DeliveryRequestStatus {
+  OPEN
+  TAKEN
+  DONE
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  image         String?
+  emailVerified DateTime?
+  role          UserRole  @default(COURIER)
+  cnpj          String?
+  whatsapp      String?
+
+  accounts         Account[]
+  sessions         Session[]
+  deliveryRequests DeliveryRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model DeliveryRequest {
+  id                 String                @id @default(cuid())
+  title              String
+  city               String
+  pickupAddress      String
+  dropoffAddress     String
+  scheduledDate      DateTime
+  scheduledTime      String
+  deliveryValueCents Int
+  estimatedMinutes   Int
+  description        String
+  posterWhatsapp     String
+  posterName         String
+  rating             Float                 @default(4.5)
+  status             DeliveryRequestStatus @default(OPEN)
+  createdById        String
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([city, createdAt])
+  @@index([status])
+  @@index([deliveryValueCents])
+  @@index([estimatedMinutes])
+  @@index([rating])
+}
