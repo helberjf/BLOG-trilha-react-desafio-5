@@ -1,3 +1,5 @@
+import type { Coordinates } from "@/lib/delivery/location";
+
 export type DeliverySort = "recentes" | "avaliacoes" | "valor" | "tempo";
 
 export type DeliveryRequestSummary = {
@@ -5,7 +7,9 @@ export type DeliveryRequestSummary = {
   title: string;
   city: string;
   pickupAddress: string;
+  pickupCoordinates?: Coordinates;
   dropoffAddress: string;
+  dropoffCoordinates?: Coordinates;
   scheduledDate: string;
   scheduledTime: string;
   deliveryValueCents: number;
@@ -30,7 +34,9 @@ export const fallbackDeliveryRequests: DeliveryRequestSummary[] = [
     title: "Entrega expressa de marmitas",
     city: "Sao Paulo",
     pickupAddress: "Rua Vergueiro, 1200 - Paraiso",
+    pickupCoordinates: { latitude: -23.5729, longitude: -46.6424 },
     dropoffAddress: "Av. Paulista, 900 - Bela Vista",
+    dropoffCoordinates: { latitude: -23.5651, longitude: -46.6516 },
     scheduledDate: "2026-05-24",
     scheduledTime: "11:30",
     deliveryValueCents: 2800,
@@ -46,7 +52,9 @@ export const fallbackDeliveryRequests: DeliveryRequestSummary[] = [
     title: "Documento urgente no centro",
     city: "Sao Paulo",
     pickupAddress: "Rua Augusta, 500 - Consolacao",
+    pickupCoordinates: { latitude: -23.5371, longitude: -46.6426 },
     dropoffAddress: "Praca da Se, 10 - Centro",
+    dropoffCoordinates: { latitude: -23.5506, longitude: -46.6339 },
     scheduledDate: "2026-05-24",
     scheduledTime: "15:00",
     deliveryValueCents: 4200,
@@ -62,7 +70,9 @@ export const fallbackDeliveryRequests: DeliveryRequestSummary[] = [
     title: "Coleta de peca automotiva",
     city: "Campinas",
     pickupAddress: "Av. Andrade Neves, 740 - Centro",
+    pickupCoordinates: { latitude: -22.9036, longitude: -47.0616 },
     dropoffAddress: "Rua Barreto Leme, 1020 - Cambui",
+    dropoffCoordinates: { latitude: -22.8994, longitude: -47.0527 },
     scheduledDate: "2026-05-24",
     scheduledTime: "09:20",
     deliveryValueCents: 3500,

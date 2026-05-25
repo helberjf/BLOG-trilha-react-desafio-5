@@ -13,5 +13,18 @@ export default async function PedidosPage({ searchParams }: PedidosPageProps) {
   const sort = normalizeSort(params.ordenar);
   const requests = await getDeliveryRequests(selectedCity, sort);
 
-  return <DeliveryBoard city={selectedCity} requests={requests} sort={sort} />;
+  const latParam = typeof params.lat === "string" ? parseFloat(params.lat) : undefined;
+  const lngParam = typeof params.lng === "string" ? parseFloat(params.lng) : undefined;
+  const raioParam = typeof params.raio === "string" ? parseInt(params.raio) : undefined;
+
+  return (
+    <DeliveryBoard
+      city={selectedCity}
+      requests={requests}
+      sort={sort}
+      initialLat={latParam !== undefined && !isNaN(latParam) ? latParam : undefined}
+      initialLng={lngParam !== undefined && !isNaN(lngParam) ? lngParam : undefined}
+      initialRadius={raioParam !== undefined && !isNaN(raioParam) ? raioParam : undefined}
+    />
+  );
 }
