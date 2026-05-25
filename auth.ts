@@ -2,6 +2,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 
 import { loginSchema } from "@/lib/auth/validation";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
@@ -17,6 +18,7 @@ const authConfig: NextAuthConfig = {
     signIn: "/login"
   },
   providers: [
+    Google,
     Credentials({
       name: "credentials",
       credentials: {
@@ -58,6 +60,16 @@ const authConfig: NextAuthConfig = {
         token.id = user.id as string;
         token.role = user.role ?? "COURIER";
         token.cnpj = user.cnpj ?? null;
+      }
+
+      // For OAuth users role may not be in the user object — fetch from DB once
+      if (token.id && token.role === undefined && hasDatabaseUrl()) {
+        const prisma = getPrisma();
+        const dbUser = await prisma.user.findUnique({ where: { id: token.id as string } });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.cnpj = dbUser.cnpj ?? null;
+        }
       }
 
       return token;
