@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Package, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -23,6 +23,7 @@ export function DeliveryRequestForm({ defaultCity, onSuccess }: DeliveryRequestF
   const router = useRouter();
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showBox, setShowBox] = useState(false);
   const {
     register,
     handleSubmit,
@@ -110,6 +111,66 @@ export function DeliveryRequestForm({ defaultCity, onSuccess }: DeliveryRequestF
           placeholder="Detalhe volume, observacoes e comprovante esperado."
         />
       </Field>
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50">
+        <button
+          type="button"
+          onClick={() => setShowBox(v => !v)}
+          className="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700"
+        >
+          <span className="flex items-center gap-2">
+            <Package size={16} className="text-slate-500" />
+            Dimensoes da embalagem
+            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-bold text-slate-500">opcional</span>
+          </span>
+          <span className="text-slate-400">{showBox ? "−" : "+"}</span>
+        </button>
+
+        {showBox ? (
+          <div className="grid grid-cols-2 gap-3 border-t border-slate-200 p-4 sm:grid-cols-4">
+            <Field label="Largura (cm)" error={errors.boxWidthCm?.message}>
+              <input
+                type="number"
+                min="0.1"
+                step="0.1"
+                {...register("boxWidthCm")}
+                className={inputClass}
+                placeholder="Ex: 20"
+              />
+            </Field>
+            <Field label="Altura (cm)" error={errors.boxHeightCm?.message}>
+              <input
+                type="number"
+                min="0.1"
+                step="0.1"
+                {...register("boxHeightCm")}
+                className={inputClass}
+                placeholder="Ex: 15"
+              />
+            </Field>
+            <Field label="Comprimento (cm)" error={errors.boxLengthCm?.message}>
+              <input
+                type="number"
+                min="0.1"
+                step="0.1"
+                {...register("boxLengthCm")}
+                className={inputClass}
+                placeholder="Ex: 30"
+              />
+            </Field>
+            <Field label="Peso (kg)" error={errors.boxWeightKg?.message}>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                {...register("boxWeightKg")}
+                className={inputClass}
+                placeholder="Ex: 2.5"
+              />
+            </Field>
+          </div>
+        ) : null}
+      </div>
 
       {serverMessage ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{serverMessage}</p> : null}
       {success ? <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Pedido publicado.</p> : null}

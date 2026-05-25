@@ -24,7 +24,11 @@ export const deliveryRequestSchema = z.object({
   posterWhatsapp: z
     .string()
     .trim()
-    .refine(value => normalizeDigits(value).length >= 10, "Informe um WhatsApp valido.")
+    .refine(value => normalizeDigits(value).length >= 10, "Informe um WhatsApp valido."),
+  boxWidthCm: z.coerce.number().positive("Largura deve ser positiva.").optional().or(z.literal("")),
+  boxHeightCm: z.coerce.number().positive("Altura deve ser positiva.").optional().or(z.literal("")),
+  boxLengthCm: z.coerce.number().positive("Comprimento deve ser positivo.").optional().or(z.literal("")),
+  boxWeightKg: z.coerce.number().positive("Peso deve ser positivo.").optional().or(z.literal(""))
 });
 
 export type DeliveryRequestInput = z.infer<typeof deliveryRequestSchema>;

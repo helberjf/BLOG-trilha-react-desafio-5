@@ -93,6 +93,10 @@ model DeliveryRequest {
   posterName         String
   rating             Float                 @default(4.5)
   status             DeliveryRequestStatus @default(OPEN)
+  boxWidthCm         Float?
+  boxHeightCm        Float?
+  boxLengthCm        Float?
+  boxWeightKg        Float?
   createdById        String
 
   createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)

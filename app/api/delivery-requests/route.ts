@@ -58,7 +58,11 @@ export async function POST(request: Request) {
         description: data.description,
         posterWhatsapp: normalizeDigits(data.posterWhatsapp),
         posterName: session.user.name ?? "Empresa",
-        createdById: session.user.id
+        createdById: session.user.id,
+        boxWidthCm: data.boxWidthCm || null,
+        boxHeightCm: data.boxHeightCm || null,
+        boxLengthCm: data.boxLengthCm || null,
+        boxWeightKg: data.boxWeightKg || null
       }
     });
 
