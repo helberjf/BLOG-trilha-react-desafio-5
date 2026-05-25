@@ -79,7 +79,7 @@ export function DeliveryRequestForm({ defaultCity, onSuccess }: DeliveryRequestF
         </Field>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Field label="Data" error={errors.scheduledDate?.message}>
           <input type="date" {...register("scheduledDate")} className={inputClass} />
         </Field>

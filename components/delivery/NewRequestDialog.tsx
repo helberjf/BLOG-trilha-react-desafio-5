@@ -25,7 +25,7 @@ export function NewRequestDialog({ city, open, onClose }: NewRequestDialogProps)
             type="button"
             aria-label="Fechar modal"
             onClick={onClose}
-            className="rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
           >
             <X size={20} />
           </button>
