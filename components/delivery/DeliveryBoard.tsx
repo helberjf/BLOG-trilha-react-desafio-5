@@ -1,9 +1,9 @@
 "use client";
 
-import { Bike, Crown, LocateFixed, Plus, Radar, ShieldCheck, TrendingUp } from "lucide-react";
+import { Bike, ChevronLeft, ChevronRight, Crown, LocateFixed, Plus, Radar, ShieldCheck, TrendingUp } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { DeliveryRequestCard } from "@/components/delivery/DeliveryRequestCard";
@@ -14,7 +14,8 @@ import { canCreateDeliveryRequest } from "@/lib/delivery/permissions";
 import {
   type DeliveryRequestSummary,
   type DeliverySort,
-  deliverySortOptions
+  deliverySortOptions,
+  DELIVERY_PAGE_SIZE
 } from "@/lib/delivery/shared";
 
 type DeliveryBoardProps = {
@@ -39,6 +40,7 @@ export function DeliveryBoard({ city, requests, sort, initialLat, initialLng, in
   );
   const [isLocatingOffers, setIsLocatingOffers] = useState(false);
   const [radiusError, setRadiusError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const canPost = canCreateDeliveryRequest(session?.user);
   const currentBoardUrl = `/pedidos?cidade=${encodeURIComponent(city)}`;
 
@@ -63,11 +65,22 @@ export function DeliveryBoard({ city, requests, sort, initialLat, initialLng, in
       })),
     [courierLocation, requests]
   );
-  const visibleRequests = courierLocation
-    ? requestsWithDistance
-        .filter(item => item.distanceKm !== null && item.distanceKm <= radiusKm)
-        .map(item => item.request)
-    : requests;
+  const sortedRequests = useMemo(() => {
+    const filtered = courierLocation
+      ? requestsWithDistance
+          .filter(item => item.distanceKm !== null && item.distanceKm <= radiusKm)
+      : requestsWithDistance;
+    if (sort === "distancia" && courierLocation) {
+      return [...filtered].sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+    }
+    return filtered;
+  }, [requestsWithDistance, courierLocation, radiusKm, sort]);
+  const visibleRequests = sortedRequests.map(item => item.request);
+  const totalPages = Math.max(1, Math.ceil(visibleRequests.length / DELIVERY_PAGE_SIZE));
+  const pagedRequests = visibleRequests.slice((page - 1) * DELIVERY_PAGE_SIZE, page * DELIVERY_PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [city, sort, courierLocation, radiusKm]);
+
   const radiusSummary = courierLocation
     ? `${visibleRequests.length} ${visibleRequests.length === 1 ? "oferta" : "ofertas"} em ate ${radiusKm} km da sua localizacao em ${city}`
     : "Ative sua localizacao para filtrar ofertas pela retirada perto de voce.";
@@ -128,20 +141,16 @@ export function DeliveryBoard({ city, requests, sort, initialLat, initialLng, in
           <p className="mt-2 max-w-2xl text-slate-600">
             Compare valor, tempo estimado e reputacao antes de chamar a empresa no WhatsApp.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {supportedCities.map(c => (
-              <Link
-                key={c}
-                href={buildCityUrl(c)}
-                className={`rounded-full border px-3 py-1 text-sm font-semibold transition ${
-                  c === city
-                    ? "border-slate-950 bg-slate-950 text-white"
-                    : "border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-800"
-                }`}
-              >
-                {c}
-              </Link>
-            ))}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <select
+              value={city}
+              onChange={e => router.push(buildCityUrl(e.target.value))}
+              className="min-h-9 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-500"
+            >
+              {supportedCities.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -300,19 +309,15 @@ export function DeliveryBoard({ city, requests, sort, initialLat, initialLng, in
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {deliverySortOptions.map(option => (
-            <Link
-              key={option.value}
-              href={`/pedidos?cidade=${encodeURIComponent(city)}&ordenar=${option.value}`}
-              className={`rounded-md border px-3 py-2 text-sm font-bold transition ${
-                sort === option.value
-                  ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200 text-slate-600 hover:border-slate-300"
-              }`}
-            >
-              {option.label}
-            </Link>
-          ))}
+          <select
+            value={sort}
+            onChange={e => router.push(`/pedidos?cidade=${encodeURIComponent(city)}&ordenar=${e.target.value}`)}
+            className="min-h-10 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-500"
+          >
+            {deliverySortOptions.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -339,9 +344,32 @@ export function DeliveryBoard({ city, requests, sort, initialLat, initialLng, in
         </section>
       ) : visibleRequests.length > 0 ? (
         <section className="grid gap-4">
-          {visibleRequests.map(request => (
+          {pagedRequests.map(request => (
             <DeliveryRequestCard key={request.id} request={request} />
           ))}
+          {totalPages > 1 ? (
+            <div className="flex items-center justify-center gap-3 py-4">
+              <button
+                type="button"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:border-slate-400 disabled:opacity-40"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <span className="text-sm font-semibold text-slate-700">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:border-slate-400 disabled:opacity-40"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          ) : null}
         </section>
       ) : (
         <section className="rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center sm:p-10">

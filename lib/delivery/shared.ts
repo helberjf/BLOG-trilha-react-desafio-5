@@ -23,10 +23,13 @@ export type DeliveryRequestSummary = {
 
 export const deliverySortOptions = [
   { value: "recentes", label: "Mais recentes" },
-  { value: "avaliacoes", label: "Melhores avaliacoes" },
+  { value: "distancia", label: "Distancia" },
   { value: "valor", label: "Maior valor" },
-  { value: "tempo", label: "Menor tempo" }
+  { value: "tempo", label: "Menor tempo" },
+  { value: "avaliacoes", label: "Melhores avaliacoes" }
 ] as const;
+
+export const DELIVERY_PAGE_SIZE = 10;
 
 export const fallbackDeliveryRequests: DeliveryRequestSummary[] = [
   {

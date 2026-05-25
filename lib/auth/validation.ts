@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { isValidCnpj, normalizeDigits } from "@/lib/delivery/format";
+import { isValidCnpj, isValidCpf, normalizeDigits } from "@/lib/delivery/format";
 import { userRoleSchema } from "@/lib/delivery/validators";
 
 export const emailSchema = z.string().trim().toLowerCase().email("Informe um email valido.");
@@ -28,6 +28,7 @@ export const registerSchema = z
     confirm: z.string().min(1, "Confirme a senha."),
     role: userRoleSchema,
     cnpj: z.string().optional(),
+    cpf: z.string().optional(),
     whatsapp: z
       .string()
       .trim()
@@ -47,6 +48,14 @@ export const registerSchema = z
         code: "custom",
         path: ["cnpj"],
         message: "Empresarios precisam informar um CNPJ valido."
+      });
+    }
+
+    if (data.role === "COURIER" && !isValidCpf(data.cpf)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["cpf"],
+        message: "Entregadores precisam informar um CPF valido."
       });
     }
   });

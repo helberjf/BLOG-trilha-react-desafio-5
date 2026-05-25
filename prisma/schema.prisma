@@ -28,6 +28,7 @@ model User {
   emailVerified DateTime?
   role          UserRole  @default(COURIER)
   cnpj          String?
+  cpf           String?   @unique
   whatsapp      String?
 
   accounts         Account[]

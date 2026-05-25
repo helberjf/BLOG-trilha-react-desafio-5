@@ -124,7 +124,11 @@ export function RegisterForm({ initialRole = "COURIER" }: RegisterFormProps) {
           <Field label="CNPJ" error={errors.cnpj?.message}>
             <input {...register("cnpj")} className={inputClass} placeholder="11.222.333/0001-81" />
           </Field>
-        ) : null}
+        ) : (
+          <Field label="CPF" error={errors.cpf?.message}>
+            <input {...register("cpf")} className={inputClass} placeholder="000.000.000-00" />
+          </Field>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Senha" error={errors.password?.message}>

@@ -1,43 +1,16 @@
 "use client";
 
-import {
-  ArrowRight,
-  BadgeCheck,
-  BriefcaseBusiness,
-  Clock3,
-  LocateFixed,
-  MapPin,
-  MessageCircle,
-  Star,
-  Users
-} from "lucide-react";
+import { ArrowRight, Bike, Clock3, LocateFixed, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { resolveNearestCity } from "@/lib/delivery/location";
+import { resolveNearestCity, supportedCities } from "@/lib/delivery/location";
 
-const cities = ["Sao Paulo", "Campinas", "Rio de Janeiro", "Belo Horizonte", "Curitiba"];
-const highlights = [
-  {
-    icon: BriefcaseBusiness,
-    title: "CNPJ verificado",
-    description: "Publique corridas avulsas, urgentes ou recorrentes sem depender de grupo aberto."
-  },
-  {
-    icon: Users,
-    title: "Motoboys por cidade",
-    description: "Entregadores encontram oportunidades por valor, tempo, avaliacao e bairro."
-  },
-  {
-    icon: MessageCircle,
-    title: "Fechamento direto",
-    description: "O contato abre no WhatsApp de quem publicou para acelerar a negociacao."
-  }
-];
+const DEFAULT_CITY = "Juiz de Fora";
 
 export function CitySelector() {
   const router = useRouter();
-  const [city, setCity] = useState(cities[0]);
+  const [city, setCity] = useState(DEFAULT_CITY);
   const [isLocating, setIsLocating] = useState(false);
   const [locationStatus, setLocationStatus] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -82,12 +55,21 @@ export function CitySelector() {
     );
   }
 
+  useEffect(() => {
+    const key = "entregaapp_location_asked";
+    if (typeof window !== "undefined" && !localStorage.getItem(key)) {
+      localStorage.setItem(key, "1");
+      handleUseLocation();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-6 sm:px-8">
       <nav className="flex items-center justify-between py-3">
         <div className="flex items-center gap-2 text-lg font-black tracking-tight">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 text-white">
-            <MapPin size={19} />
+            <Bike size={19} />
           </span>
           EntregaApp
         </div>
@@ -101,39 +83,19 @@ export function CitySelector() {
         </div>
       </nav>
 
-      <section className="grid flex-1 items-center gap-6 py-6 sm:gap-10 sm:py-10 lg:grid-cols-[1.04fr_0.96fr]">
+      <section className="grid flex-1 items-center gap-8 py-8 lg:grid-cols-[1.04fr_0.96fr]">
         <div>
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-bold uppercase text-emerald-700 shadow-sm">
-            <BadgeCheck size={15} />
-            Marketplace local de entregas
-          </p>
-          <h1 className="max-w-3xl text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-6xl">
-            Publique entregas e encontre motoboys disponiveis
+          <h1 className="max-w-lg text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
+            Pedidos de entrega perto de voce
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-700 sm:text-lg sm:leading-8">
-            Uma vitrine comercial para empresas divulgarem necessidades de entrega e para
-            entregadores escolherem pedidos com valor, horario, local de retirada e rota claros.
+          <p className="mt-2 text-base font-semibold text-emerald-700">
+            O jeito mais simples de combinar uma entrega sem taxas escondidas.
           </p>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a
-              href="/cadastro?tipo=empresa"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 font-bold text-white transition hover:bg-emerald-700"
-            >
-              Sou empresa
-              <ArrowRight size={17} />
-            </a>
-            <a
-              href="/cadastro?tipo=entregador"
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-200 bg-white px-4 font-bold text-slate-950 transition hover:border-slate-300"
-            >
-              Sou entregador
-            </a>
-          </div>
+          <p className="mt-1 text-sm text-slate-500">Escolha sua cidade e veja oportunidades disponíveis agora.</p>
 
           <form
             onSubmit={handleSubmit}
-            className="mt-8 grid max-w-xl gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-[1fr_auto]"
+            className="mt-6 grid max-w-lg gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-[1fr_auto]"
           >
             <label className="sr-only" htmlFor="city">
               Cidade
@@ -144,7 +106,7 @@ export function CitySelector() {
               onChange={event => setCity(event.target.value)}
               className="min-h-12 flex-1 rounded-md border border-slate-200 bg-slate-50 px-3 text-slate-900 outline-none focus:border-emerald-500"
             >
-              {cities.map(option => (
+              {supportedCities.map(option => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -167,6 +129,7 @@ export function CitySelector() {
               <ArrowRight size={18} />
             </button>
           </form>
+
           {locationStatus ? (
             <p className="mt-3 inline-flex rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
               {locationStatus}
@@ -178,19 +141,16 @@ export function CitySelector() {
             </p>
           ) : null}
 
-          <div className="mt-7 grid gap-3 sm:grid-cols-3">
-            {highlights.map(item => {
-              const Icon = item.icon;
-
-              return (
-                <div key={item.title} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                  <Icon className="text-emerald-700" size={20} />
-                  <h2 className="mt-3 text-sm font-black text-slate-950">{item.title}</h2>
-                  <p className="mt-1 text-sm leading-6 text-slate-600">{item.description}</p>
-                </div>
-              );
-            })}
-          </div>
+          <p className="mt-6 text-sm text-slate-500">
+            Quer publicar pedidos?{" "}
+            <a href="/cadastro?tipo=empresa" className="font-bold text-emerald-700 hover:underline">
+              Criar conta empresarial
+            </a>
+            {" · "}
+            <a href="/cadastro?tipo=entregador" className="font-bold text-slate-700 hover:underline">
+              Cadastrar como entregador
+            </a>
+          </p>
         </div>
 
         <div className="hidden rounded-lg border border-slate-200 bg-white p-5 shadow-sm lg:block">

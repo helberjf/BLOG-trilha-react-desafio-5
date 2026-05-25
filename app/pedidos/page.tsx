@@ -9,7 +9,7 @@ export default async function PedidosPage({ searchParams }: PedidosPageProps) {
   const params = await searchParams;
   const cityParam = params.cidade;
   const city = Array.isArray(cityParam) ? cityParam[0] : cityParam;
-  const selectedCity = city?.trim() || "Sao Paulo";
+  const selectedCity = city?.trim() || "Juiz de Fora";
   const sort = normalizeSort(params.ordenar);
   const requests = await getDeliveryRequests(selectedCity, sort);
 
