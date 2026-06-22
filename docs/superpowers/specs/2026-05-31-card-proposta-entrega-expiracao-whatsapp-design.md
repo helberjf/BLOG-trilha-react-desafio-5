@@ -6,7 +6,7 @@ Deixar cada proposta de entrega mais facil de escanear no mural, com card menor,
 
 ## Escopo
 
-- Reduzir a validade visivel das propostas de entrega para 24 horas a partir de `createdAt`.
+- Reduzir a validade visivel das    propostas de entrega para 24 horas a partir de `createdAt`.
 - Manter propostas expiradas fora da lista publica de pedidos.
 - Compactar o `DeliveryRequestCard` atual sem remover informacoes essenciais.
 - Exibir um botao pequeno de WhatsApp para contato com a empresa.

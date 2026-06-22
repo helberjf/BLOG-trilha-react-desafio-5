@@ -19,6 +19,21 @@ enum DeliveryRequestStatus {
   CANCELLED
 }
 
+enum CompanyPlan {
+  EMPRESA
+  PATROCINADO
+}
+
+enum CompanySubscriptionStatus {
+  NONE
+  INCOMPLETE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -29,17 +44,29 @@ model User {
   role          UserRole  @default(COURIER)
   cnpj          String?
   cpf           String?   @unique
+  companyPostalCode String?
   whatsapp      String?
+  companyPlan   CompanyPlan?
+  subscriptionStatus CompanySubscriptionStatus @default(NONE)
+  trialEndsAt   DateTime?
+  stripeCustomerId String? @unique
+  stripeSubscriptionId String? @unique
+  stripePriceId String?
 
   accounts         Account[]
   sessions         Session[]
-  deliveryRequests DeliveryRequest[]
+  deliveryRequests DeliveryRequest[] @relation("CreatedDeliveryRequests")
+  acceptedDeliveryRequests DeliveryRequest[] @relation("AcceptedDeliveryRequests")
+  companyDeliveryReviews DeliveryReview[] @relation("CompanyDeliveryReviews")
+  courierDeliveryReviews DeliveryReview[] @relation("CourierDeliveryReviews")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([email])
   @@index([role])
+  @@index([companyPlan])
+  @@index([subscriptionStatus])
 }
 
 model Account {
@@ -83,7 +110,11 @@ model DeliveryRequest {
   title              String
   city               String
   pickupAddress      String
+  pickupLatitude     Float?
+  pickupLongitude    Float?
   dropoffAddress     String
+  dropoffLatitude    Float?
+  dropoffLongitude   Float?
   scheduledDate      DateTime
   scheduledTime      String
   deliveryValueCents Int
@@ -98,15 +129,42 @@ model DeliveryRequest {
   boxLengthCm        Float?
   boxWeightKg        Float?
   createdById        String
+  acceptedById       String?
+  acceptedAt         DateTime?
 
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy User @relation("CreatedDeliveryRequests", fields: [createdById], references: [id], onDelete: Cascade)
+  acceptedBy User? @relation("AcceptedDeliveryRequests", fields: [acceptedById], references: [id], onDelete: SetNull)
+  review DeliveryReview?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([city, createdAt])
+  @@index([pickupLatitude, pickupLongitude])
   @@index([status])
+  @@index([status, createdAt])
   @@index([deliveryValueCents])
   @@index([estimatedMinutes])
+  @@index([rating])
+  @@index([acceptedById])
+}
+
+model DeliveryReview {
+  id        String @id @default(cuid())
+  requestId String @unique
+  companyId String
+  courierId String
+  rating    Int
+  comment   String?
+
+  request DeliveryRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  company User @relation("CompanyDeliveryReviews", fields: [companyId], references: [id], onDelete: Cascade)
+  courier User @relation("CourierDeliveryReviews", fields: [courierId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([courierId])
   @@index([rating])
 }

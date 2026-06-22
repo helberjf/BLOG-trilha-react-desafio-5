@@ -1,5 +1,8 @@
 import {
   type DeliveryRequestSummary,
+  type DeliverySort,
+  deliverySortOptions,
+  normalizeSort,
   sortDeliveryRequests
 } from "@/lib/delivery/shared";
 
@@ -43,8 +46,9 @@ describe("delivery request sorting", () => {
     expect(sortDeliveryRequests(requests, "recentes")[0]?.id).toBe("a");
   });
 
-  it("sorts by best rating first", () => {
-    expect(sortDeliveryRequests(requests, "avaliacoes")[0]?.id).toBe("b");
+  it("does not expose company rating sorting", () => {
+    expect(deliverySortOptions.some(option => option.value === "avaliacoes")).toBe(false);
+    expect(sortDeliveryRequests(requests, "avaliacoes")[0]?.id).toBe("a");
   });
 
   it("sorts by highest delivery value first", () => {
@@ -53,5 +57,30 @@ describe("delivery request sorting", () => {
 
   it("sorts by shortest estimated time first", () => {
     expect(sortDeliveryRequests(requests, "tempo")[0]?.id).toBe("b");
+  });
+
+  it("keeps sponsored requests first inside the selected sort", () => {
+    const sponsoredRequests: DeliveryRequestSummary[] = [
+      {
+        ...requests[0],
+        id: "common-new",
+        createdAt: "2026-05-23T12:00:00.000Z",
+        isSponsored: false
+      },
+      {
+        ...requests[1],
+        id: "sponsored-old",
+        createdAt: "2026-05-23T08:00:00.000Z",
+        isSponsored: true
+      }
+    ];
+
+    expect(sortDeliveryRequests(sponsoredRequests, "recentes")[0]?.id).toBe("sponsored-old");
+  });
+
+  it("accepts distance as a delivery sort option", () => {
+    const distanceSort: DeliverySort = "distancia";
+
+    expect(normalizeSort("distancia")).toBe(distanceSort);
   });
 });

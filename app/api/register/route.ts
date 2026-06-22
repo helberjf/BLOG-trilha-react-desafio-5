@@ -36,7 +36,8 @@ export async function POST(request: Request) {
         password: passwordHash,
         role: data.role,
         cnpj: data.role === "BUSINESS" ? normalizeDigits(data.cnpj) : null,
-        cpf: data.role === "COURIER" ? normalizeDigits(data.cpf) : null,
+        cpf: normalizeDigits(data.cpf),
+        companyPostalCode: data.role === "BUSINESS" ? normalizeDigits(data.companyPostalCode) : null,
         whatsapp: normalizeDigits(data.whatsapp)
       }
     });

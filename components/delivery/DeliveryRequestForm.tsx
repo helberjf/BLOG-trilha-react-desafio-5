@@ -1,12 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Package, Send } from "lucide-react";
+import { Loader2, LocateFixed, Package, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import {
+  type DeliveryRequestFormInput,
   type DeliveryRequestInput,
   deliveryRequestSchema
 } from "@/lib/delivery/validators";
@@ -24,18 +25,53 @@ export function DeliveryRequestForm({ defaultCity, onSuccess }: DeliveryRequestF
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [showBox, setShowBox] = useState(false);
+  const [isLocatingPickup, setIsLocatingPickup] = useState(false);
+  const [pickupLocationStatus, setPickupLocationStatus] = useState<string | null>(null);
+  const [pickupLocationError, setPickupLocationError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting }
-  } = useForm<DeliveryRequestInput>({
+  } = useForm<DeliveryRequestFormInput, unknown, DeliveryRequestInput>({
     resolver: zodResolver(deliveryRequestSchema),
     defaultValues: {
       city: defaultCity,
       estimatedMinutes: 30
     }
   });
+
+  function handleUsePickupLocation() {
+    if (!navigator.geolocation) {
+      setPickupLocationStatus(null);
+      setPickupLocationError("Localizacao indisponivel neste navegador.");
+      return;
+    }
+
+    setIsLocatingPickup(true);
+    setPickupLocationError(null);
+    setPickupLocationStatus("Solicitando localizacao da retirada...");
+
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        setValue("pickupLatitude", position.coords.latitude, { shouldDirty: true, shouldValidate: true });
+        setValue("pickupLongitude", position.coords.longitude, { shouldDirty: true, shouldValidate: true });
+        setPickupLocationStatus("Localizacao da retirada salva para busca por raio.");
+        setIsLocatingPickup(false);
+      },
+      () => {
+        setPickupLocationStatus(null);
+        setPickupLocationError("Nao foi possivel acessar a localizacao da retirada.");
+        setIsLocatingPickup(false);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 60_000,
+        timeout: 10_000
+      }
+    );
+  }
 
   async function onSubmit(data: DeliveryRequestInput) {
     setServerMessage(null);
@@ -55,6 +91,8 @@ export function DeliveryRequestForm({ defaultCity, onSuccess }: DeliveryRequestF
     }
 
     setSuccess(true);
+    setPickupLocationStatus(null);
+    setPickupLocationError(null);
     reset({ city: defaultCity, estimatedMinutes: 30 });
     router.refresh();
     onSuccess?.();
@@ -78,6 +116,41 @@ export function DeliveryRequestForm({ defaultCity, onSuccess }: DeliveryRequestF
         <Field label="Local de entrega" error={errors.dropoffAddress?.message}>
           <input {...register("dropoffAddress")} className={inputClass} placeholder="Endereco de destino" />
         </Field>
+      </div>
+
+      <input type="hidden" {...register("pickupLatitude")} />
+      <input type="hidden" {...register("pickupLongitude")} />
+      <input type="hidden" {...register("dropoffLatitude")} />
+      <input type="hidden" {...register("dropoffLongitude")} />
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-black text-slate-950">Localizacao da retirada</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Salve a posicao atual para entregadores encontrarem este pedido por raio.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleUsePickupLocation}
+            disabled={isLocatingPickup}
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-bold text-slate-950 transition hover:border-emerald-300 disabled:opacity-60"
+          >
+            <LocateFixed size={16} />
+            {isLocatingPickup ? "Buscando..." : "Usar localizacao da retirada"}
+          </button>
+        </div>
+        {pickupLocationStatus ? (
+          <p className="mt-2 rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+            {pickupLocationStatus}
+          </p>
+        ) : null}
+        {pickupLocationError ? (
+          <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+            {pickupLocationError}
+          </p>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

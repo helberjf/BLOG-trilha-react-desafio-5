@@ -4,8 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { BadgeCheck, BriefcaseBusiness, Loader2, MapPin, WalletCards } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
+import { buildEmailSuggestions, formatCep, formatCnpj, formatCpf, formatPhoneBR } from "@/lib/auth/format";
 import { type RegisterInput, registerSchema } from "@/lib/auth/validation";
 
 const inputClass =
@@ -22,6 +23,8 @@ export function RegisterForm({ initialRole = "COURIER" }: RegisterFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
+    control,
     formState: { errors, isSubmitting }
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -30,6 +33,17 @@ export function RegisterForm({ initialRole = "COURIER" }: RegisterFormProps) {
     }
   });
   const roleField = register("role");
+  const emailField = register("email");
+  const whatsappField = register("whatsapp");
+  const cpfField = register("cpf");
+  const cnpjField = register("cnpj");
+  const companyPostalCodeField = register("companyPostalCode");
+  const emailValue = useWatch({ control, name: "email" }) ?? "";
+  const whatsappValue = useWatch({ control, name: "whatsapp" }) ?? "";
+  const cpfValue = useWatch({ control, name: "cpf" }) ?? "";
+  const cnpjValue = useWatch({ control, name: "cnpj" }) ?? "";
+  const companyPostalCodeValue = useWatch({ control, name: "companyPostalCode" }) ?? "";
+  const emailSuggestions = buildEmailSuggestions(emailValue);
   const accountPitch =
     selectedRole === "BUSINESS"
       ? {
@@ -49,6 +63,38 @@ export function RegisterForm({ initialRole = "COURIER" }: RegisterFormProps) {
           items: ["Filtros por valor e avaliacao", "Contato direto no WhatsApp", "Pedidos com local e horario claros"]
         };
   const PitchIcon = accountPitch.icon;
+  const formDetails =
+    selectedRole === "BUSINESS"
+      ? {
+          selectedLabel: "empresa",
+          title: "Cadastro de empresa",
+          description: "Dados da empresa, do CNPJ e do responsavel para publicar pedidos com rastreabilidade.",
+          nameLabel: "Razao social",
+          documentLabel: "CNPJ",
+          submitLabel: "Criar conta empresarial"
+        }
+      : {
+          selectedLabel: "entregador",
+          title: "Cadastro de entregador",
+          description: "Dados pessoais para acessar oportunidades e conversar pelo WhatsApp.",
+          nameLabel: "Nome completo",
+          documentLabel: "CPF",
+          submitLabel: "Criar conta de entregador"
+        };
+
+  function handleRoleChange(role: RegisterInput["role"]) {
+    setSelectedRole(role);
+    setValue("role", role, {
+      shouldDirty: true,
+      shouldValidate: true
+    });
+    router.replace(`/cadastro?tipo=${role === "BUSINESS" ? "empresa" : "entregador"}`, { scroll: false });
+
+    if (role === "COURIER") {
+      setValue("cnpj", "", { shouldDirty: true });
+      setValue("companyPostalCode", "", { shouldDirty: true });
+    }
+  }
 
   async function onSubmit(data: RegisterInput) {
     setServerError(null);
@@ -92,43 +138,147 @@ export function RegisterForm({ initialRole = "COURIER" }: RegisterFormProps) {
       </aside>
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid min-w-0 gap-4">
+        <input type="hidden" {...roleField} />
+
+        <div className="grid gap-2 rounded-lg bg-slate-100 p-1 sm:grid-cols-2">
+          <button
+            type="button"
+            aria-pressed={selectedRole === "COURIER"}
+            onClick={() => handleRoleChange("COURIER")}
+            className={`min-h-11 rounded-md px-3 text-sm font-black transition ${
+              selectedRole === "COURIER"
+                ? "bg-white text-slate-950 shadow-sm"
+                : "text-slate-600 hover:bg-white/70 hover:text-slate-950"
+            }`}
+          >
+            Sou entregador
+          </button>
+          <button
+            type="button"
+            aria-pressed={selectedRole === "BUSINESS"}
+            onClick={() => handleRoleChange("BUSINESS")}
+            className={`min-h-11 rounded-md px-3 text-sm font-black transition ${
+              selectedRole === "BUSINESS"
+                ? "bg-white text-slate-950 shadow-sm"
+                : "text-slate-600 hover:bg-white/70 hover:text-slate-950"
+            }`}
+          >
+            Sou empresa
+          </button>
+        </div>
+
+        <p aria-live="polite" className="text-xs font-black uppercase text-emerald-700">
+          Formulario selecionado: {formDetails.selectedLabel}
+        </p>
+
+        <div>
+          <h2 className="text-xl font-black text-slate-950">{formDetails.title}</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{formDetails.description}</p>
+          {errors.role ? <p className="mt-1 text-xs text-red-600">{errors.role.message}</p> : null}
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Nome" error={errors.name?.message}>
+          <Field label={formDetails.nameLabel} error={errors.name?.message}>
             <input {...register("name")} className={inputClass} />
           </Field>
           <Field label="Email" error={errors.email?.message}>
-            <input type="email" autoComplete="email" {...register("email")} className={inputClass} />
+            <input type="email" autoComplete="email" list="email-suggestions" {...emailField} className={inputClass} />
+            <datalist id="email-suggestions">
+              {emailSuggestions.map(suggestion => (
+                <option key={suggestion} value={suggestion}>
+                  {suggestion}
+                </option>
+              ))}
+            </datalist>
           </Field>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Tipo de conta" error={errors.role?.message}>
-            <select
-              {...roleField}
-              onChange={event => {
-                roleField.onChange(event);
-                setSelectedRole(event.target.value as RegisterInput["role"]);
-              }}
-              className={inputClass}
-            >
-              <option value="COURIER">Entregador</option>
-              <option value="BUSINESS">Empresario</option>
-            </select>
-          </Field>
           <Field label="WhatsApp" error={errors.whatsapp?.message}>
-            <input {...register("whatsapp")} className={inputClass} placeholder="(11) 99999-8888" />
+            <input
+              {...whatsappField}
+              value={whatsappValue}
+              onChange={event =>
+                setValue("whatsapp", formatPhoneBR(event.target.value), {
+                  shouldDirty: true
+                })
+              }
+              autoComplete="tel"
+              inputMode="tel"
+              className={inputClass}
+              placeholder="(11) 99999-8888"
+            />
+          </Field>
+          <Field
+            label={selectedRole === "BUSINESS" ? "CNPJ" : formDetails.documentLabel}
+            error={selectedRole === "BUSINESS" ? errors.cnpj?.message : errors.cpf?.message}
+          >
+            {selectedRole === "BUSINESS" ? (
+              <input
+                {...cnpjField}
+                value={cnpjValue}
+                onChange={event =>
+                  setValue("cnpj", formatCnpj(event.target.value), {
+                    shouldDirty: true
+                  })
+                }
+                autoComplete="off"
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="11.222.333/0001-81"
+              />
+            ) : (
+              <input
+                {...cpfField}
+                value={cpfValue}
+                onChange={event =>
+                  setValue("cpf", formatCpf(event.target.value), {
+                    shouldDirty: true
+                  })
+                }
+                autoComplete="off"
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="000.000.000-00"
+              />
+            )}
           </Field>
         </div>
 
         {selectedRole === "BUSINESS" ? (
-          <Field label="CNPJ" error={errors.cnpj?.message}>
-            <input {...register("cnpj")} className={inputClass} placeholder="11.222.333/0001-81" />
-          </Field>
-        ) : (
-          <Field label="CPF" error={errors.cpf?.message}>
-            <input {...register("cpf")} className={inputClass} placeholder="000.000.000-00" />
-          </Field>
-        )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="CPF do responsavel" error={errors.cpf?.message}>
+              <input
+                {...cpfField}
+                value={cpfValue}
+                onChange={event =>
+                  setValue("cpf", formatCpf(event.target.value), {
+                    shouldDirty: true
+                  })
+                }
+                autoComplete="off"
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="529.982.247-25"
+              />
+            </Field>
+            <Field label="CEP do CNPJ" error={errors.companyPostalCode?.message}>
+              <input
+                {...companyPostalCodeField}
+                value={companyPostalCodeValue}
+                onChange={event =>
+                  setValue("companyPostalCode", formatCep(event.target.value), {
+                    shouldDirty: true
+                  })
+                }
+                autoComplete="postal-code"
+                inputMode="numeric"
+                className={inputClass}
+                placeholder="36010-000"
+              />
+            </Field>
+          </div>
+        ) : null}
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Senha" error={errors.password?.message}>
@@ -147,7 +297,7 @@ export function RegisterForm({ initialRole = "COURIER" }: RegisterFormProps) {
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-slate-950 font-bold text-white transition hover:bg-slate-800 disabled:opacity-60"
         >
           {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : null}
-          Criar conta
+          {formDetails.submitLabel}
         </button>
       </form>
     </div>

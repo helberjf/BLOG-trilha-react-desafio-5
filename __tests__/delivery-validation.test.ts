@@ -5,7 +5,11 @@ import {
   isValidCnpj,
   normalizeDigits
 } from "@/lib/delivery/format";
-import { deliveryRequestSchema } from "@/lib/delivery/validators";
+import {
+  deliveryReviewSchema,
+  deliveryRequestSchema,
+  resolveDeliveryRequestCoordinates
+} from "@/lib/delivery/validators";
 
 describe("delivery formatting and validation", () => {
   it("validates CNPJ numbers", () => {
@@ -45,5 +49,61 @@ describe("delivery formatting and validation", () => {
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("normalizes explicit pickup coordinates for radius search", () => {
+    const result = deliveryRequestSchema.parse({
+      title: "Retirada de documentos",
+      city: "Sao Paulo",
+      pickupAddress: "Av. Paulista, 1000",
+      dropoffAddress: "Rua Augusta, 500",
+      scheduledDate: "2026-05-24",
+      scheduledTime: "14:30",
+      deliveryValue: "35,00",
+      estimatedMinutes: 45,
+      description: "Envelope pequeno",
+      posterWhatsapp: "(11) 99999-8888",
+      pickupLatitude: "-23.5729",
+      pickupLongitude: "-46.6424"
+    });
+
+    expect(resolveDeliveryRequestCoordinates(result).pickupCoordinates).toEqual({
+      latitude: -23.5729,
+      longitude: -46.6424
+    });
+  });
+
+  it("falls back to city coordinates when pickup GPS is not provided", () => {
+    const result = deliveryRequestSchema.parse({
+      title: "Retirada de documentos",
+      city: "Sao Paulo",
+      pickupAddress: "Av. Paulista, 1000",
+      dropoffAddress: "Rua Augusta, 500",
+      scheduledDate: "2026-05-24",
+      scheduledTime: "14:30",
+      deliveryValue: "35,00",
+      estimatedMinutes: 45,
+      description: "Envelope pequeno",
+      posterWhatsapp: "(11) 99999-8888"
+    });
+
+    expect(resolveDeliveryRequestCoordinates(result).pickupCoordinates).toEqual({
+      latitude: -23.5505,
+      longitude: -46.6333
+    });
+  });
+
+  it("validates company reviews for accepted couriers", () => {
+    const result = deliveryReviewSchema.safeParse({
+      rating: "5",
+      comment: "Chegou no horario combinado e avisou a empresa pelo WhatsApp."
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.rating).toBe(5);
+    }
+
+    expect(deliveryReviewSchema.safeParse({ rating: 6 }).success).toBe(false);
   });
 });

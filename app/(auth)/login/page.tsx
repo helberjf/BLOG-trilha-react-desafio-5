@@ -3,11 +3,19 @@ import { Bike } from "lucide-react";
 import { Suspense } from "react";
 
 import { LoginForm } from "@/app/(auth)/login/LoginForm";
+import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
 
 export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
       <div className="w-full max-w-sm">
+        <Breadcrumbs
+          className="mb-5"
+          items={[
+            { label: "Inicio", href: "/" },
+            { label: "Entrar" }
+          ]}
+        />
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2 text-lg font-black text-slate-950">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 text-white">
@@ -24,13 +32,6 @@ export default function LoginPage() {
             <LoginForm />
           </Suspense>
         </div>
-
-        <p className="mt-5 text-center text-sm text-slate-500">
-          Ainda nao tem conta?{" "}
-          <Link href="/cadastro" className="font-bold text-emerald-700 hover:underline">
-            Criar conta
-          </Link>
-        </p>
       </div>
     </main>
   );

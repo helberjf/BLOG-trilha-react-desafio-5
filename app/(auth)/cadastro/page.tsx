@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { RegisterForm } from "@/app/(auth)/cadastro/RegisterForm";
+import { Breadcrumbs } from "@/components/navigation/Breadcrumbs";
 import type { RegisterInput } from "@/lib/auth/validation";
 
 type RegisterPageProps = {
@@ -17,12 +18,19 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   return (
     <main className="mx-auto grid min-h-screen w-full max-w-5xl place-items-center px-5 py-10">
       <section className="w-full rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <Breadcrumbs
+          className="mb-4"
+          items={[
+            { label: "Inicio", href: "/" },
+            { label: "Criar conta" }
+          ]}
+        />
         <Link href="/" className="text-sm font-bold text-emerald-700">
           EntregaApp
         </Link>
         <h1 className="mt-4 text-3xl font-black text-slate-950">Criar conta</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Escolha se voce e empresario ou entregador. Empresarios precisam informar CNPJ.
+          Escolha se voce e empresario ou entregador. Empresas informam CNPJ, CEP do CNPJ e CPF do responsavel.
         </p>
         <div className="mt-6">
           <RegisterForm initialRole={initialRole} />

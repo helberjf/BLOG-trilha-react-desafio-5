@@ -3,6 +3,14 @@ import { z } from "zod";
 import { isValidCnpj, isValidCpf, normalizeDigits } from "@/lib/delivery/format";
 import { userRoleSchema } from "@/lib/delivery/validators";
 
+export const nameSchema = z
+  .string()
+  .trim()
+  .refine(value => {
+    const parts = value.split(/\s+/);
+    return parts.length >= 2 && parts.every(part => part.length >= 2);
+  }, "Informe nome completo ou razao social com pelo menos duas palavras.");
+
 export const emailSchema = z.string().trim().toLowerCase().email("Informe um email valido.");
 
 export const passwordSchema = z
@@ -22,17 +30,22 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 export const registerSchema = z
   .object({
-    name: z.string().trim().min(2, "Informe seu nome ou empresa."),
+    name: nameSchema,
     email: emailSchema,
     password: passwordSchema,
     confirm: z.string().min(1, "Confirme a senha."),
     role: userRoleSchema,
     cnpj: z.string().optional(),
     cpf: z.string().optional(),
+    companyPostalCode: z.string().optional(),
     whatsapp: z
       .string()
       .trim()
-      .refine(value => normalizeDigits(value).length >= 10, "Informe um WhatsApp valido.")
+      .refine(value => {
+        const digits = normalizeDigits(value);
+        const localDigits = digits.startsWith("55") && digits.length > 11 ? digits.slice(2) : digits;
+        return localDigits.length === 10 || localDigits.length === 11;
+      }, "Informe um WhatsApp valido.")
   })
   .superRefine((data, ctx) => {
     if (data.password !== data.confirm) {
@@ -51,11 +64,22 @@ export const registerSchema = z
       });
     }
 
-    if (data.role === "COURIER" && !isValidCpf(data.cpf)) {
+    if (!isValidCpf(data.cpf)) {
       ctx.addIssue({
         code: "custom",
         path: ["cpf"],
-        message: "Entregadores precisam informar um CPF valido."
+        message:
+          data.role === "BUSINESS"
+            ? "Empresarios precisam informar o CPF valido do responsavel."
+            : "Entregadores precisam informar um CPF valido."
+      });
+    }
+
+    if (data.role === "BUSINESS" && normalizeDigits(data.companyPostalCode).length !== 8) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["companyPostalCode"],
+        message: "Empresarios precisam informar o CEP do CNPJ."
       });
     }
   });

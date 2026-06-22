@@ -4,6 +4,7 @@ import NextAuth, { type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 
+import type { CompanyPlan, CompanySubscriptionStatus } from "@/lib/billing/plans";
 import { loginSchema } from "@/lib/auth/validation";
 import { getPrisma, hasDatabaseUrl } from "@/lib/prisma";
 
@@ -49,7 +50,11 @@ const authConfig: NextAuthConfig = {
           name: user.name,
           email: user.email,
           role: user.role,
-          cnpj: user.cnpj
+          cnpj: user.cnpj,
+          cpf: user.cpf,
+          companyPostalCode: user.companyPostalCode,
+          companyPlan: user.companyPlan,
+          subscriptionStatus: user.subscriptionStatus
         };
       }
     })
@@ -60,15 +65,23 @@ const authConfig: NextAuthConfig = {
         token.id = user.id as string;
         token.role = user.role ?? "COURIER";
         token.cnpj = user.cnpj ?? null;
+        token.cpf = user.cpf ?? null;
+        token.companyPostalCode = user.companyPostalCode ?? null;
+        token.companyPlan = user.companyPlan ?? null;
+        token.subscriptionStatus = user.subscriptionStatus ?? "NONE";
       }
 
-      // For OAuth users role may not be in the user object — fetch from DB once
-      if (token.id && token.role === undefined && hasDatabaseUrl()) {
+      // For OAuth users, commercial fields may not be present in the provider object.
+      if (token.id && hasDatabaseUrl() && (!token.role || token.subscriptionStatus === undefined)) {
         const prisma = getPrisma();
         const dbUser = await prisma.user.findUnique({ where: { id: token.id as string } });
         if (dbUser) {
           token.role = dbUser.role;
           token.cnpj = dbUser.cnpj ?? null;
+          token.cpf = dbUser.cpf ?? null;
+          token.companyPostalCode = dbUser.companyPostalCode ?? null;
+          token.companyPlan = dbUser.companyPlan ?? null;
+          token.subscriptionStatus = dbUser.subscriptionStatus ?? "NONE";
         }
       }
 
@@ -79,6 +92,10 @@ const authConfig: NextAuthConfig = {
         session.user.id = token.id as string;
         session.user.role = token.role as "BUSINESS" | "COURIER";
         session.user.cnpj = (token.cnpj as string | null) ?? null;
+        session.user.cpf = (token.cpf as string | null) ?? null;
+        session.user.companyPostalCode = (token.companyPostalCode as string | null) ?? null;
+        session.user.companyPlan = (token.companyPlan as CompanyPlan | null) ?? null;
+        session.user.subscriptionStatus = (token.subscriptionStatus as CompanySubscriptionStatus | null) ?? "NONE";
       }
 
       return session;
